@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("NativeNetSharp")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Inject .net framework into native apps")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Shalzuth")]
 [assembly: AssemblyProduct("NativeNetSharp")]
-[assembly: AssemblyCopyright("Copyright ©  2021")]
+[assembly: AssemblyCopyright("Copyright © 2021 Shalzuth")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -44,48 +44,6 @@ namespace NativeNetSharp
             Marshal.Copy(wrapper.ToArray(), 0, wrapperPtr, wrapper.Count);
             return Marshal.GetDelegateForFunctionPointer<T>(wrapperPtr);
         }
-        public static void JmpPatch(IntPtr originalPtr, IntPtr replacement)
-        {
-            // todo fix
-            throw new Exception("JmpPatch not supported");
-            var origCodeLoc = Marshal.ReadIntPtr(originalPtr);
-            var jmpToNew = new List<Byte>();
-            if (Environment.Is64BitProcess)
-            {
-                jmpToNew.AddRange(new Byte[] { 0x49, 0xBB }); // mov r11, replacement
-                jmpToNew.AddRange(BitConverter.GetBytes(replacement.ToInt64()));
-                jmpToNew.AddRange(new Byte[] { 0x41, 0xFF, 0xE3 }); // jmp r11
-            }
-            else
-            {
-                jmpToNew.Add(0xB8); // mov eax
-                jmpToNew.AddRange(BitConverter.GetBytes(replacement.ToInt32()));
-                jmpToNew.AddRange(new Byte[] { 0xFF, 0xE0 }); // jmp eax
-            }
-            var origCode = new byte[0x12];
-            Marshal.Copy(origCodeLoc, origCode, 0, origCode.Length);
-            var jmpToOrig = new List<Byte>();
-            jmpToOrig.AddRange(origCode);
-            if (Environment.Is64BitProcess)
-            {
-                jmpToOrig.AddRange(new Byte[] { 0x49, 0xBB }); // mov r11, replacement
-                jmpToOrig.AddRange(BitConverter.GetBytes((origCodeLoc + origCode.Length).ToInt64()));
-                jmpToOrig.AddRange(new Byte[] { 0x41, 0xFF, 0xE3 }); // jmp r11
-            }
-            else
-            {
-
-            }
-            var newFuncLocation = VirtualAllocEx(GetCurrentProcess(), IntPtr.Zero, 0x100, 0x3000, 0x40);
-            Marshal.Copy(jmpToOrig.ToArray(), 0, newFuncLocation, jmpToOrig.ToArray().Length);
-
-            VirtualProtect(origCodeLoc, (UIntPtr)jmpToNew.ToArray().Length, (UInt32)0x40, out UInt32 old);
-            Marshal.Copy(jmpToNew.ToArray(), 0, origCodeLoc, jmpToNew.ToArray().Length);
-            FlushInstructionCache(GetCurrentProcess(), origCodeLoc, (UIntPtr)jmpToNew.ToArray().Length);
-            VirtualProtect(origCodeLoc, (UIntPtr)jmpToNew.ToArray().Length, old, out UInt32 _);
-
-            Marshal.WriteIntPtr(originalPtr, newFuncLocation);
-        }
         public static IntPtr baseAddress;
         public static IntPtr procHandle;
         public static Boolean target32Bit = false;
@@ -218,6 +176,12 @@ namespace NativeNetSharp
             if (retVal == IntPtr.Zero && args.ToList().Last().Length == (target32Bit ? 4u : 8u)) return (IntPtr)(target32Bit ? BitConverter.ToInt32(args.ToList().Last(), 0) : BitConverter.ToInt64(args.ToList().Last(), 0)); // todo fix hack for arg refs
             else return retVal;
         }
+        public class ProxyCall
+        {
+            public IntPtr OrigAddress = IntPtr.Zero;
+            public IntPtr TargetAddress = IntPtr.Zero;
+        }
+        public static ProxyCall ProxyCaller;
         public static IntPtr ExecFunc(IntPtr funcAddr, params IntPtr[] args)
         {
             var asm = new List<Byte>();
@@ -268,10 +232,10 @@ namespace NativeNetSharp
             }
             asm.AddRange(Enumerable.Range(0, 0x20).Select(a => (byte)0x90));
             asm.Add(0xC3); // ret
-            var codePtr = VirtualAllocEx(procHandle, IntPtr.Zero, asm.Count, 0x3000, 0x40);
-            WriteProcessMemory(procHandle, codePtr, asm.ToArray(), asm.Count, out _);
-            var qq = BitConverter.ToString(asm.ToArray()).Replace("-", " ");
-            var thread = CreateRemoteThread(procHandle, IntPtr.Zero, 0, codePtr, IntPtr.Zero, 0, IntPtr.Zero);
+
+            var codePtr = VirtualAllocEx(procHandle, ProxyCaller?.TargetAddress ?? IntPtr.Zero, asm.Count, 0x3000, 0x40);
+            WriteProcessMemory(procHandle, ProxyCaller?.TargetAddress ?? codePtr, asm.ToArray(), asm.Count, out _);
+            var thread = CreateRemoteThread(procHandle, IntPtr.Zero, 0, ProxyCaller?.OrigAddress ?? codePtr, IntPtr.Zero, 0, IntPtr.Zero);
             WaitForSingleObject(thread, 10000);
             var buf = new Byte[target32Bit ? 4u : 8u];
             ReadProcessMemory(procHandle, retVal, buf, buf.Length, out _);

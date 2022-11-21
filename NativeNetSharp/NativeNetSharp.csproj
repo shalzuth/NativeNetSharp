@@ -5,17 +5,19 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C93536BE-A0B9-4971-9D20-6E5C867DA65D}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>NativeNetSharp</RootNamespace>
     <AssemblyName>NativeNetSharp</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <LangVersion>9.0</LangVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>NativeNetSharp.Program</StartupObject>
+    <StartupObject>
+    </StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
